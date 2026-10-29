@@ -1,6 +1,6 @@
 # Smart-Translate-Master
 
-Setup on Windows
+**Setup on Windows**
 
 Run these commands in a Command Prompt terminal inside VS Code.
 
@@ -13,8 +13,8 @@ If you already cloned and opened the repository, skip this step.
 
 2. Create and activate a virtual environment
 
-py -m venv .venv
-.venv\Scripts\activate.bat
+  py -m venv .venv
+  .venv\Scripts\activate.bat
 
 In VS Code, select the interpreter using:
 
@@ -22,26 +22,26 @@ Ctrl + Shift + P → Python: Select Interpreter → select .venv.
 
 3. Install dependencies
 
-python -m pip install -r requirements.txt
+  python -m pip install -r requirements.txt
 
 4. Configure Azure credentials
 
 Create an Azure Speech resource and obtain its key and region. Set them in the same CMD terminal where you will run the program:
 
-set "SPEECH_KEY=YOUR_AZURE_SPEECH_KEY"
-set "SPEECH_REGION=YOUR_AZURE_REGION"
+  set "SPEECH_KEY=YOUR_AZURE_SPEECH_KEY"
+  set "SPEECH_REGION=YOUR_AZURE_REGION"
 
 Replace the placeholders with your resource's values. These settings must be entered again when opening a new terminal.
 
 Never commit your actual key to GitHub or include it in screenshots.
 
-Run the Prototype
+**Run the Prototype**
 
 Connect headphones and select the correct microphone and audio output in Windows.
 
 With the virtual environment active and credentials configured, run:
 
-python translator.py
+  python translator.py
 
 Press Enter to begin listening.
 
@@ -55,7 +55,7 @@ Listen to the translated speech.
 
 Type q at the next prompt to quit.
 
-Language Configuration
+**Language Configuration**
 
 The initial configuration in translator.py is English to Mandarin:
 
@@ -67,7 +67,7 @@ To change languages, update the source language, target language, and output voi
 
 The current prototype uses a fixed source language; it does not automatically detect the speaker's language.
 
-Testing
+**Testing**
 
 Check each stage separately:
 
