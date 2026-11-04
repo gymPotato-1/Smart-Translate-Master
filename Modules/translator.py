@@ -2,6 +2,9 @@ import os
 
 import azure.cognitiveservices.speech as speechsdk
 
+from utterance_filter import remove_fillers
+from text_translation import translate_text
+
 
 # Example: English speech -> Chinese text and Mandarin speech.
 SOURCE_LANGUAGE = "en-US"
@@ -17,20 +20,20 @@ def main():
         print("Set SPEECH_KEY and SPEECH_REGION in your terminal first.")
         return
 
-    # Recognition and text translation.
-    translation_config = speechsdk.translation.SpeechTranslationConfig(
+    # Speech-to-text recognition.
+    speech_config = speechsdk.SpeechConfig(
         subscription=key,
         region=region,
     )
-    translation_config.speech_recognition_language = SOURCE_LANGUAGE
-    translation_config.add_target_language(TARGET_LANGUAGE)
+
+    speech_config.speech_recognition_language = SOURCE_LANGUAGE
 
     microphone = speechsdk.audio.AudioConfig(
         use_default_microphone=True
     )
 
-    recognizer = speechsdk.translation.TranslationRecognizer(
-        translation_config=translation_config,
+    recognizer = speechsdk.SpeechRecognizer(
+        speech_config=speech_config,
         audio_config=microphone,
     )
 
@@ -49,6 +52,13 @@ def main():
         speech_config=speech_config,
         audio_config=output,
     )
+
+    translator_key = os.getenv("TRANSLATOR_KEY")
+    translator_region = os.getenv("TRANSLATOR_REGION")
+
+    if not translator_key:
+        print("Set TRANSLATOR_KEY in your terminal first.")
+        return
 
     print("English -> Mandarin Chinese")
     print("Use headphones and select them as your default audio output.")
@@ -70,17 +80,32 @@ def main():
             print("Recognition canceled:", result.cancellation_details)
             continue
 
-        if result.reason != speechsdk.ResultReason.TranslatedSpeech:
+        if result.reason != speechsdk.ResultReason.RecognizedSpeech:
             print("Unexpected recognition result:", result.reason)
             continue
 
-        translated_text = result.translations.get(TARGET_LANGUAGE)
+        # Remove filler words from recognized speech.
+        cleaned_text = remove_fillers(result.text)
 
-        print("\nORIGINAL:")
-        print(result.text)
+        print("\nORIGINAL (FILTERED):")
+        print(cleaned_text)
+
+        if not cleaned_text:
+            continue
+
+        # Translate filtered English text into Mandarin.
+        try:
+            translated_text = translate_text(
+                cleaned_text,
+                translator_key,
+                translator_region,
+            )
+        except Exception as error:
+            print("Translation failed:", error)
+            continue
 
         print("\nTRANSLATION:")
-        print(translated_text or "(No translation returned)")
+        print(translated_text)
 
         if not translated_text:
             continue
