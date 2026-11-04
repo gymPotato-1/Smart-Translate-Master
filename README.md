@@ -1,80 +1,222 @@
 # Smart-Translate-Master
 
-**Setup on Windows**
+A speech-to-speech translation system using Microsoft Azure Speech and Translator services. The project recognizes spoken language, removes unnecessary filler words, translates the cleaned text, and generates translated audio.
 
-Run these commands in a Command Prompt terminal inside VS Code.
+## Setup on Windows
 
-1. Clone the repository
+Run these commands in a **Command Prompt (CMD)** terminal inside VS Code.
 
+### 1. Clone the repository
+
+```cmd
 git clone https://github.com/gymPotato-1/Smart-Translate-Master.git
 cd Smart-Translate-Master
+```
 
 If you already cloned and opened the repository, skip this step.
 
-2. Create and activate a virtual environment
+### 2. Create and activate a virtual environment
 
-  py -m venv .venv
-  .venv\Scripts\activate.bat
+Python 3.11 or 3.12 is recommended for compatibility.
 
-In VS Code, select the interpreter using:
+```cmd
+py -3.11 -m venv .venv
+.venv\Scripts\activate.bat
+```
 
-Ctrl + Shift + P → Python: Select Interpreter → select .venv.
+If Python 3.11 is unavailable, use a supported installed Python version.
 
-3. Install dependencies
+In VS Code, select the interpreter:
 
-  python -m pip install -r requirements.txt
+`Ctrl + Shift + P` → `Python: Select Interpreter` → select `.venv`.
 
-4. Configure Azure credentials
+### 3. Install dependencies
 
-Create an Azure Speech resource and obtain its key and region. Set them in the same CMD terminal where you will run the program:
+```cmd
+python -m pip install -r requirements.txt
+```
 
-  set "SPEECH_KEY=YOUR_AZURE_SPEECH_KEY"
-  set "SPEECH_REGION=YOUR_AZURE_REGION"
+The `requirements.txt` file should include:
 
-Replace the placeholders with your resource's values. These settings must be entered again when opening a new terminal.
+```text
+azure-cognitiveservices-speech
+requests
+```
 
-Never commit your actual key to GitHub or include it in screenshots.
+### 4. Configure Azure credentials
 
-**Run the Prototype**
+This project requires access to two Azure services:
+
+**Azure Speech**
+- Speech-to-text recognition
+- Text-to-speech generation
+
+**Azure Translator**
+- Text translation after filler-word removal
+
+Create the required resources through the [Azure Portal](https://portal.azure.com/).
+
+Obtain the API key and region for each resource.
+
+Set the environment variables in the same CMD terminal where you will run the program:
+
+```cmd
+set "SPEECH_KEY=YOUR_AZURE_SPEECH_KEY"
+set "SPEECH_REGION=eastus"
+
+set "TRANSLATOR_KEY=YOUR_AZURE_TRANSLATOR_KEY"
+set "TRANSLATOR_REGION=eastus"
+```
+
+Replace the placeholder keys and regions with your resource values.
+
+These settings are temporary and must be entered again when opening a new terminal.
+
+**Security:** Never commit API keys to GitHub or include them in screenshots.
+
+### 5. Verify environment variables
+
+In CMD:
+
+```cmd
+if defined SPEECH_KEY (echo Speech key is set) else (echo Speech key is missing)
+if defined TRANSLATOR_KEY (echo Translator key is set) else (echo Translator key is missing)
+```
+
+Both keys should be set before running the program.
+
+## Run the Prototype
 
 Connect headphones and select the correct microphone and audio output in Windows.
 
-With the virtual environment active and credentials configured, run:
+With the virtual environment active and Azure credentials configured, run:
 
-  python translator.py
+```cmd
+python Modules/translator.py
+```
 
-Press Enter to begin listening.
+1. Press Enter to begin listening.
+2. Speak one short sentence in English.
+3. Pause to finish the utterance.
+4. The program recognizes the speech and removes filler words.
+5. The cleaned text is translated into Mandarin.
+6. The translated text is displayed in the terminal.
+7. The Mandarin translation is played through the selected audio output.
+8. Type `q` at the next prompt to quit.
 
-Speak one short sentence in the configured source language.
+## Translation Pipeline
 
-Pause to finish the utterance.
+```text
+Microphone
+    ↓
+Azure Speech-to-Text
+    ↓
+Utterance Filter
+    ↓
+Azure Text Translator
+    ↓
+Translated Text
+    ↓
+Azure Text-to-Speech
+    ↓
+Speaker / Headphones
+```
 
-Review the original transcript and translated text.
+### Utterance Filtering
 
-Listen to the translated speech.
+The `utterance_filter.py` module uses regular expressions to remove common English hesitation words.
 
-Type q at the next prompt to quit.
+Example:
 
-**Language Configuration**
+**Original speech:**
 
-The initial configuration in translator.py is English to Mandarin:
+"Um, I think, uh, we should start the meeting."
 
+**Filtered text:**
+
+"I think we should start the meeting."
+
+The cleaned text is sent to Azure Translator instead of the unfiltered transcription.
+
+This reduces unnecessary filler words in the displayed text, translation, and generated audio.
+
+The filter currently focuses on English hesitation words. It does not guarantee removal of every disfluency.
+
+## Language Configuration
+
+The current prototype uses English as the input language and Mandarin Chinese as the output language.
+
+In `translator.py`:
+
+```python
 SOURCE_LANGUAGE = "en-US"
 TARGET_LANGUAGE = "zh-Hans"
 TARGET_VOICE = "zh-CN-XiaoxiaoNeural"
+```
 
-To change languages, update the source language, target language, and output voice together. Save the file and restart the program.
+The current implementation uses a fixed source language and target language.
 
-The current prototype uses a fixed source language; it does not automatically detect the speaker's language.
+**Important:** When changing the target language, update both the text translation configuration in `text_translation.py` and the speech synthesis voice in `translator.py`.
 
-**Testing**
+Automatic input language detection and user-selectable output languages are planned for future development.
 
-Check each stage separately:
+## Testing
 
-Transcription: Does the original text match what was spoken?
+Test each component separately.
 
-Translation: Does the translated text preserve the meaning?
+### 1. Speech Recognition
 
-Playback: Does the audio match the translated text and use the correct language?
+- Does Azure correctly recognize spoken sentences?
+- Can it recognize academic vocabulary?
+- Does background noise affect transcription accuracy?
 
-Include tests with numbers, names, technical terms, and negative statements. Record errors and have a bilingual speaker review translation quality.
+### 2. Utterance Filtering
+
+- Does the filter remove "um," "uh," and similar filler words?
+- Does it preserve meaningful words?
+- Does the cleaned text maintain the original meaning?
+
+### 3. Text Translation
+
+- Does Azure translate the filtered text correctly?
+- Does the translation preserve the meaning of the original sentence?
+- Does filtering improve translation quality?
+
+### 4. Text-to-Speech
+
+- Does the generated audio match the translated text?
+- Is the output language correct?
+- Is the audio understandable?
+
+### 5. End-to-End Testing
+
+Test the complete pipeline from microphone input to translated audio output.
+
+Record transcription accuracy, translation accuracy, filler removal performance, and overall response time.
+
+## Future Improvements
+
+- Automatic input language detection
+- User-selectable target language
+- Support for at least five languages
+- Language-specific utterance filtering
+- Improved recognition of technical vocabulary
+- Noise reduction for microphone input
+- Improved sentence segmentation for long speech
+- Raspberry Pi integration
+- Touchscreen interface for language selection and text display
+
+## Technologies
+
+- Python
+- Microsoft Azure Speech SDK
+- Microsoft Azure Translator API
+- Regular expressions (`re`)
+- Requests library
+- Raspberry Pi (planned hardware integration)
+
+## References
+
+- [Azure Speech SDK Documentation](https://learn.microsoft.com/en-us/azure/ai-services/speech-service/)
+- [Azure Translator Documentation](https://learn.microsoft.com/en-us/azure/ai-services/translator/)
+- [Python Regular Expressions](https://docs.python.org/3/library/re.html)
