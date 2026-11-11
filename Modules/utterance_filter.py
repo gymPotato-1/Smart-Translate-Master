@@ -1,63 +1,88 @@
 
 import re
 
-# Common English hesitation sounds.
-FILLER_WORDS = [
-    "um",
-    "umm",
-    "ummm",
-    "uh",
-    "uhh",
-    "uhhh",
-    "erm",
-    "er",
-    "hmm",
-    "hm",
-    "ahh",
-]
+# Common conversational fillers.
+# Keep this list conservative to avoid deleting meaningful words.
+FILLERS = {
+    "en": ["um", "uh", "umm", "uhh"],
+    "zh": ["嗯", "呃", "额"],
+    "es": ["eh", "em", "mmm"],
+    "fr": ["euh", "heu"],
+    "ja": ["えーと", "えっと", "あのー"],
+}
 
-# Match whole words only, ignoring capitalization.
-FILLER_PATTERN = re.compile(
-    r"\b(?:" + "|".join(FILLER_WORDS) + r")\b",
-    flags=re.IGNORECASE,
-)
+# Characters that indicate a likely sentence ending
+END_PUNCTUATION = (".", "!", "?", "。", "！", "？")
 
 
-def remove_fillers(text):
-    if not text:
-        return ""
+def remove_fillers(text, language):
+    """Remove common filler words for the detected language."""
+    lang = language.lower().split("-")[0]
+    fillers = FILLERS.get(lang, [])
 
-    # Remove filler words.
-    cleaned = FILLER_PATTERN.sub("", text)
+    result = text
 
-    # Remove punctuation left behind by fillers.
-    cleaned = re.sub(r"^\s*[,;:]+\s*", "", cleaned)
-    cleaned = re.sub(r"\s+[,;:](?=\s|$)", "", cleaned)
-    cleaned = re.sub(r"([,;:])\s*[,;:]+", r"\1", cleaned)
+    for filler in sorted(fillers, key=len, reverse=True):
+        if lang in ("zh", "ja"):
+            # Conservative: only remove fillers at the start
+            pattern = r"^\s*" + re.escape(filler) + r"[\s,，、]*"
+        else:
+            # Remove standalone words, not substrings
+            pattern = (
+                r"(?<!\w)" + re.escape(filler) +
+                r"(?!\w)[\s,，]*"
+            )
 
-    # Fix spaces before punctuation.
-    cleaned = re.sub(r"\s+([,.!?;:])", r"\1", cleaned)
+        result = re.sub(
+            pattern,
+            "",
+            result,
+            flags=re.IGNORECASE
+        )
 
-    # Remove extra spaces.
-    cleaned = re.sub(r"\s+", " ", cleaned).strip()
-
-    # Capitalize the first letter.
-    if cleaned:
-        cleaned = cleaned[0].upper() + cleaned[1:]
-
-    return cleaned
+    return result.strip(" ,，、")
 
 
-if __name__ == "__main__":
-    examples = [
-        "Um, I think, uh, this is working.",
-        "Uhh, can you explain this?",
-        "The, um, meeting starts at 3 PM.",
-        "I hmm think we should leave.",
-        "Hello everyone!",
-    ]
+def is_complete_sentence(text):
+    """Simple punctuation-based completion heuristic."""
+    return text.rstrip().endswith(END_PUNCTUATION)
 
-    for sentence in examples:
-        print("Before:", sentence)
-        print("After: ", remove_fillers(sentence))
-        print()
+
+class UtteranceFilter:
+    def __init__(self):
+        self.buffer = ""
+        self.language = None
+
+    def process(self, text, language):
+        """Return completed text or None if more is needed."""
+        cleaned = remove_fillers(text, language)
+
+        if not cleaned:
+            return None
+
+        lang = language.lower().split("-")[0]
+
+        # Avoid joining different languages together
+        if self.language and lang != self.language:
+            self.buffer = ""
+
+        self.language = lang
+
+        if self.buffer:
+            separator = "" if lang in ("zh", "ja") else " "
+            self.buffer += separator + cleaned
+        else:
+            self.buffer = cleaned
+
+        if is_complete_sentence(self.buffer):
+            completed = self.buffer
+            self.buffer = ""
+            return completed
+
+        return None
+
+    def flush(self):
+        """Release unfinished text at an explicit boundary."""
+        result = self.buffer.strip()
+        self.buffer = ""
+        return result or None
