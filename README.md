@@ -95,14 +95,10 @@ With the virtual environment active and Azure credentials configured, run:
 python Modules/translator.py
 ```
 
-1. Press Enter to begin listening.
-2. Speak one short sentence in English.
-3. Pause to finish the utterance.
-4. The program recognizes the speech and removes filler words.
-5. The cleaned text is translated into Mandarin.
-6. The translated text is displayed in the terminal.
-7. The Mandarin translation is played through the selected audio output.
-8. Type `q` at the next prompt to quit.
+1. Select target language by entering a number.
+2. Start speaking.
+3. The translator module will display both original and translated text.
+4. Press Enter to stop.
 
 ## Translation Pipeline
 
@@ -124,7 +120,7 @@ Speaker / Headphones
 
 ### Utterance Filtering
 
-The `utterance_filter.py` module uses regular expressions to remove common English hesitation words.
+The `utterance_filter.py` module uses regular expressions to remove common hesitation words.
 
 Example:
 
@@ -139,26 +135,6 @@ Example:
 The cleaned text is sent to Azure Translator instead of the unfiltered transcription.
 
 This reduces unnecessary filler words in the displayed text, translation, and generated audio.
-
-The filter currently focuses on English hesitation words. It does not guarantee removal of every disfluency.
-
-## Language Configuration
-
-The current prototype uses English as the input language and Mandarin Chinese as the output language.
-
-In `translator.py`:
-
-```python
-SOURCE_LANGUAGE = "en-US"
-TARGET_LANGUAGE = "zh-Hans"
-TARGET_VOICE = "zh-CN-XiaoxiaoNeural"
-```
-
-The current implementation uses a fixed source language and target language.
-
-**Important:** When changing the target language, update both the text translation configuration in `text_translation.py` and the speech synthesis voice in `translator.py`.
-
-Automatic input language detection and user-selectable output languages are planned for future development.
 
 ## Testing
 
@@ -196,10 +172,6 @@ Record transcription accuracy, translation accuracy, filler removal performance,
 
 ## Future Improvements
 
-- Automatic input language detection
-- User-selectable target language
-- Support for at least five languages
-- Language-specific utterance filtering
 - Improved recognition of technical vocabulary
 - Noise reduction for microphone input
 - Improved sentence segmentation for long speech
