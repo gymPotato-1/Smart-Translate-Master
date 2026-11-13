@@ -11,6 +11,15 @@ Azure starts only after pressing Start. History can be read without Azure
 credentials. Run one application instance per data directory: opening a database
 recovers meetings left active by its previous run.
 
+## Input language
+
+The Live page's Input dropdown offers Auto detect (English, Chinese, Spanish,
+French and Japanese) or a fixed input language. Fixed input bypasses automatic
+language detection. Choose it before Start; it is locked until the session has
+fully stopped. Translate to controls the output independently and can still be
+changed during recognition. Recognized input language is shown in each entry
+and saved in history. Auto detect remains the default on application launch.
+
 ## Local database
 
 - Windows: `%LOCALAPPDATA%\SmartTranslate\meetings.sqlite3` (with a user-profile

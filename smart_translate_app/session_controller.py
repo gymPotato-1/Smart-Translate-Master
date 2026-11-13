@@ -28,13 +28,14 @@ class SessionController:
         self.session_id = None
         self.state = "Stopped"
 
-    def start(self, target):
+    def start(self, target, source_language=None):
         if self.state != "Stopped":
             return False
         self.session_id = str(uuid4())
         self.state = "Starting"
         try:
-            self.service = self.service_factory(self.session_id, target, self.events)
+            options = {"source_language": source_language} if source_language is not None else {}
+            self.service = self.service_factory(self.session_id, target, self.events, **options)
             self.service.start()
         except Exception:
             self.state = "Stopped"

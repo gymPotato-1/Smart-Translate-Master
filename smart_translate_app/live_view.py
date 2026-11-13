@@ -37,9 +37,6 @@ class LiveTranslationView(AITranslator):
 
         language_row = tk.Frame(self.frame, bg="#101827")
         language_row.grid(row=1, column=0, sticky="ew", padx=16, pady=4)
-        self.label(language_row, "Translate to", 12, "#94A3B8").pack(
-            side="left", padx=(0, 12)
-        )
         self.language_var = tk.StringVar(master=self.frame, value="中文")
         style = ttk.Style(self.frame)
         style.theme_use("clam")
@@ -59,24 +56,33 @@ class LiveTranslationView(AITranslator):
         self.frame.option_add("*TCombobox*Listbox.font", ("Arial", 16))
         self.frame.option_add("*TCombobox*Listbox.background", "#1E293B")
         self.frame.option_add("*TCombobox*Listbox.foreground", "#E2E8F0")
+        self.label(language_row, "Input", 12, "#94A3B8").pack(side="left", padx=(0, 8))
+        self.source_var = tk.StringVar(master=self.frame, value="Auto detect")
+        self.source_selector = ttk.Combobox(
+            language_row, textvariable=self.source_var,
+            values=["Auto detect", *LANGUAGES], state="readonly",
+            font=("Arial", 14), width=13, height=6,
+            style="SmartTranslate.TCombobox",
+        )
+        self.source_selector.pack(side="left")
+        self.label(language_row, "Translate to", 12, "#94A3B8").pack(
+            side="left", padx=(16, 8)
+        )
         self.language_selector = ttk.Combobox(
             language_row,
             textvariable=self.language_var,
             values=list(LANGUAGES),
             state="readonly",
             font=("Arial", 14),
-            width=17,
+            width=12,
             height=6,
             style="SmartTranslate.TCombobox",
         )
         self.language_selector.pack(side="left")
         self.language_selector.bind("<<ComboboxSelected>>", self.change_language)
-        self.label(language_row, "Change anytime", 10, "#94A3B8").pack(
-            side="left", padx=14
-        )
         self.notice = self.label(
             self.frame,
-            "Ready. Select a target and press Start. Meetings are saved locally.",
+            "Choose input before Start; translation target can change anytime. Meetings are saved locally.",
             10, "#FBBF24",
         )
         self.notice.configure(anchor="w", wraplength=750, justify="left")
@@ -145,12 +151,13 @@ class LiveTranslationView(AITranslator):
             box.see("end")
 
     def start_session(self):
-        if self.controller.start(self.target_language):
+        source = LANGUAGES.get(self.source_var.get())
+        if self.controller.start(self.target_language, source_language=source):
             self.has_error = False
             self.transcript_box.configure(state="normal")
             self.transcript_box.delete("1.0", "end")
             self.transcript_box.configure(state="disabled")
-            self.notice.configure(text="Starting microphone recognition…", fg="#94A3B8")
+            self.notice.configure(text=f"Starting microphone recognition · Input: {self.source_var.get()}…", fg="#94A3B8")
         self.refresh_controls()
 
     def stop_session(self):
@@ -160,6 +167,7 @@ class LiveTranslationView(AITranslator):
 
     def refresh_controls(self):
         state = self.controller.state
+        self.source_selector.configure(state="readonly" if state == "Stopped" else "disabled")
         self.status.configure(text=f"● {state}", fg="#93C5FD" if state != "Stopped" else "#94A3B8")
         self.start_button.configure(state="normal" if state == "Stopped" else "disabled")
         self.stop_button.configure(state="normal" if state not in ("Stopped", "Stopping") else "disabled")

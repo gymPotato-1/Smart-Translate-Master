@@ -12,9 +12,10 @@ from .models import TranscriptEntry, TranslationEvent, timestamp
 
 class AzureService:
     def __init__(self, session_id, target, events, *, sdk=None, translator=None,
-                 credentials=None):
+                 credentials=None, source_language=None):
         self.session_id = session_id
         self.target = target
+        self.source_language = source_language
         self.events = events
         self.sdk = sdk
         self.translator = translator
@@ -68,16 +69,23 @@ class AzureService:
                 self.translator = translate_text
             sdk = self.sdk
             config = self._speech_config()
-            config.set_property(
-                property_id=sdk.PropertyId.SpeechServiceConnection_LanguageIdMode,
-                value="Continuous",
-            )
-            detect = sdk.languageconfig.AutoDetectSourceLanguageConfig(
-                languages=[lang.speech for lang in LANGUAGES.values()]
-            )
+            recognition_options = {}
+            if self.source_language is not None:
+                config.speech_recognition_language = self.source_language.speech
+            else:
+                config.set_property(
+                    property_id=sdk.PropertyId.SpeechServiceConnection_LanguageIdMode,
+                    value="Continuous",
+                )
+                recognition_options["auto_detect_source_language_config"] = (
+                    sdk.languageconfig.AutoDetectSourceLanguageConfig(
+                        languages=[lang.speech for lang in LANGUAGES.values()]
+                    )
+                )
             recognizer = sdk.SpeechRecognizer(
-                speech_config=config, auto_detect_source_language_config=detect,
+                speech_config=config,
                 audio_config=sdk.audio.AudioConfig(use_default_microphone=True),
+                **recognition_options,
             )
             recognizer.recognizing.connect(self._on_partial)
             recognizer.recognized.connect(self._on_final)
@@ -133,7 +141,8 @@ class AzureService:
             original = event.result.text.strip()
             if not original:
                 return
-            source = self.sdk.AutoDetectSourceLanguageResult(event.result).language or ""
+            source = (self.source_language.speech if self.source_language is not None
+                      else self.sdk.AutoDetectSourceLanguageResult(event.result).language or "")
             with self.lock:
                 if not self.accepting:
                     return
